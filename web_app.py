@@ -51,7 +51,7 @@ def game_page(game_name):
     if game_name not in GAMES:
         return redirect(url_for('index'))
     
-    # 検索キーワードを取得（前後の空白を削除）
+    # 検索キーワードを取得
     search_query = request.args.get('search', '').strip()
     
     # その競技の全メンバーリスト
@@ -59,10 +59,8 @@ def game_page(game_name):
     
     # 表示するメンバーを決定
     if search_query:
-        # 検索窓に文字がある時だけ絞り込む
         display_members = [name for name in all_members if search_query in name]
     else:
-        # 検索窓が空の時は全員を表示
         display_members = all_members
     
     html = """
@@ -72,36 +70,54 @@ def game_page(game_name):
     
     <h1>【{{ game_name }}】出場確認</h1>
 
-    <form action="/game/{{ game_name }}" method="get" style="margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
-        <input type="text" name="search" placeholder="名前で絞り込み..." value="{{ search_query }}" style="padding: 5px; width: 200px;">
-        <button type="submit" style="padding: 5px 15px;">検索</button>
-        {% if search_query %}
-            <a href="/game/{{ game_name }}" style="margin-left: 10px; color: #666;">クリア</a>
-        {% endif %}
+    <form action="/game/{{ game_name }}" method="get" style="margin-bottom: 30px; background: #f9f9f9; padding: 20px; border-radius: 12px; border: 2px solid #eee;">
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <input type="text" name="search" placeholder="名前を入力..." value="{{ search_query }}" 
+                   style="padding: 15px; width: 350px; font-size: 1.2em; border: 1px solid #ccc; border-radius: 8px;">
+            <button type="submit" 
+                    style="padding: 15px 30px; font-size: 1.2em; background-color: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                検索
+            </button>
+            {% if search_query %}
+                <a href="/game/{{ game_name }}" style="margin-left: 10px; color: #666; font-size: 1.1em;">クリア</a>
+            {% endif %}
+        </div>
     </form>
 
-    <p style="font-weight: bold;">
+    <p style="font-size: 1.1em; font-weight: bold; color: #333;">
         表示中: {{ display_members|length }} 名 / 全体: {{ all_members|length }} 名
     </p>
 
-    <table border="1" style="width:100%; text-align:center; border-collapse: collapse; margin-top: 10px;">
+    <table border="1" style="width:100%; text-align:center; border-collapse: collapse; margin-top: 10px; font-size: 1.1em;">
         <tr style="background-color: #f2f2f2;">
-            <th style="padding: 10px;">名前</th>
+            <th style="padding: 15px;">名前</th>
             <th>状態</th>
             <th>操作</th>
         </tr>
         {% for name in display_members %}
-        <tr>
-            <td style="padding: 10px;">{{ name }}</td>
-            <td>{% if name in checked_in %} <span style="color: green; font-weight: bold;">✅済</span> {% else %} <span style="color: #ccc;">ー</span> {% endif %}</td>
+        <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 15px;">{{ name }}</td>
+            <td>
+                {% if name in checked_in %} 
+                    <span style="color: #1e7e34; font-weight: bold; font-size: 1.2em;">✅完了</span> 
+                {% else %} 
+                    <span style="color: #bbb;">未点呼</span> 
+                {% endif %}
+            </td>
             <td>
                 <form action="/update" method="post" style="margin:0;">
                     <input type="hidden" name="game_name" value="{{ game_name }}">
                     <input type="hidden" name="user_name" value="{{ name }}">
                     {% if name in checked_in %}
-                        <button type="submit" name="action" value="cancel" style="background:#ffcccc; border: 1px solid #ff9999; border-radius: 3px; cursor: pointer;">取消</button>
+                        <button type="submit" name="action" value="cancel" 
+                                style="padding: 10px 20px; background:#d9534f; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                            取消
+                        </button>
                     {% else %}
-                        <button type="submit" name="action" value="checkin" style="background:#ccffcc; border: 1px solid #99ff99; border-radius: 3px; cursor: pointer;">チェックイン</button>
+                        <button type="submit" name="action" value="checkin" 
+                                style="padding: 10px 20px; background:#28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                            チェックイン
+                        </button>
                     {% endif %}
                 </form>
             </td>
@@ -110,28 +126,12 @@ def game_page(game_name):
     </table>
 
     {% if search_query and not display_members %}
-        <p style="color: red; margin-top: 20px;">「{{ search_query }}」に一致する人は見つかりませんでした。</p>
+        <p style="color: red; margin-top: 20px; font-size: 1.2em;">「{{ search_query }}」に一致する人は見つかりませんでした。</p>
     {% endif %}
     """
     return render_template_string(html, 
                                  game_name=game_name, 
-                                 display_members=display_members,  # ここをHTML側の名前と一致させました
+                                 display_members=display_members, 
                                  all_members=all_members,
                                  checked_in=checked_in_data[game_name],
                                  search_query=search_query)
-# --- データ更新処理 ---
-@app.post('/update')
-def update():
-    game = request.form.get('game_name')
-    name = request.form.get('user_name')
-    action = request.form.get('action')
-    
-    if action == "checkin":
-        checked_in_data[game].add(name)
-    elif action == "cancel":
-        checked_in_data[game].discard(name)
-        
-    return redirect(url_for('game_page', game_name=game))
-
-if __name__ == "__main__":
-    app.run(debug=True)

@@ -51,14 +51,18 @@ def game_page(game_name):
     if game_name not in GAMES:
         return redirect(url_for('index'))
     
-    # 検索キーワードを取得
+    # 検索キーワードを取得（前後の空白を削除）
     search_query = request.args.get('search', '').strip()
     
-    # メンバー一覧を取得し、検索ワードがあれば絞り込む
+    # その競技の全メンバーリスト
     all_members = GAMES[game_name]
+    
+    # 表示するメンバーを決定
     if search_query:
+        # 検索窓に文字がある時だけ絞り込む
         display_members = [name for name in all_members if search_query in name]
     else:
+        # 検索窓が空の時は全員を表示
         display_members = all_members
     
     html = """
@@ -68,30 +72,36 @@ def game_page(game_name):
     
     <h1>【{{ game_name }}】出場確認</h1>
 
-    <form action="/game/{{ game_name }}" method="get" style="margin-bottom: 20px; background: #f9f9f9; padding: 10px; border-radius: 5px;">
-        <input type="text" name="search" placeholder="この競技内の名前を検索..." value="{{ search_query }}">
-        <button type="submit">絞り込み</button>
+    <form action="/game/{{ game_name }}" method="get" style="margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+        <input type="text" name="search" placeholder="名前で絞り込み..." value="{{ search_query }}" style="padding: 5px; width: 200px;">
+        <button type="submit" style="padding: 5px 15px;">検索</button>
         {% if search_query %}
-            <a href="/game/{{ game_name }}">リセット</a>
+            <a href="/game/{{ game_name }}" style="margin-left: 10px; color: #666;">クリア</a>
         {% endif %}
     </form>
 
-    <p>該当者: {{ display_members|length }} 名 / 全体: {{ all_members|length }} 名</p>
+    <p style="font-weight: bold;">
+        表示中: {{ display_members|length }} 名 / 全体: {{ all_members|length }} 名
+    </p>
 
-    <table border="1" style="width:100%; text-align:center; border-collapse: collapse;">
-        <tr style="background-color: #f2f2f2;"><th>名前</th><th>状態</th><th>操作</th></tr>
+    <table border="1" style="width:100%; text-align:center; border-collapse: collapse; margin-top: 10px;">
+        <tr style="background-color: #f2f2f2;">
+            <th style="padding: 10px;">名前</th>
+            <th>状態</th>
+            <th>操作</th>
+        </tr>
         {% for name in display_members %}
         <tr>
-            <td>{{ name }}</td>
-            <td>{% if name in checked_in %} ✅済 {% else %} ー {% endif %}</td>
+            <td style="padding: 10px;">{{ name }}</td>
+            <td>{% if name in checked_in %} <span style="color: green; font-weight: bold;">✅済</span> {% else %} <span style="color: #ccc;">ー</span> {% endif %}</td>
             <td>
                 <form action="/update" method="post" style="margin:0;">
                     <input type="hidden" name="game_name" value="{{ game_name }}">
                     <input type="hidden" name="user_name" value="{{ name }}">
                     {% if name in checked_in %}
-                        <button type="submit" name="action" value="cancel" style="background:#ffcccc;">取消</button>
+                        <button type="submit" name="action" value="cancel" style="background:#ffcccc; border: 1px solid #ff9999; border-radius: 3px; cursor: pointer;">取消</button>
                     {% else %}
-                        <button type="submit" name="action" value="checkin">チェックイン</button>
+                        <button type="submit" name="action" value="checkin" style="background:#ccffcc; border: 1px solid #99ff99; border-radius: 3px; cursor: pointer;">チェックイン</button>
                     {% endif %}
                 </form>
             </td>
@@ -99,13 +109,13 @@ def game_page(game_name):
         {% endfor %}
     </table>
 
-    {% if not display_members %}
-        <p style="color: red;">「{{ search_query }}」に一致する人は見つかりませんでした。</p>
+    {% if search_query and not display_members %}
+        <p style="color: red; margin-top: 20px;">「{{ search_query }}」に一致する人は見つかりませんでした。</p>
     {% endif %}
     """
     return render_template_string(html, 
                                  game_name=game_name, 
-                                 members=display_members, 
+                                 display_members=display_members,  # ここをHTML側の名前と一致させました
                                  all_members=all_members,
                                  checked_in=checked_in_data[game_name],
                                  search_query=search_query)

@@ -1,23 +1,39 @@
 from flask import Flask, render_template_string, request, redirect, url_for
+import pandas as pd
+import os
 
 app = Flask(__name__)
 
-# 1. ここに競技とメンバーを登録（いくらでも増やせます）
-GAMES = {
-    "玉入れ": ["田中太郎", "佐藤次郎", "鈴木花子", "高橋愛", "伊藤健"],
-    "クラス対抗リレー": ["山本一郎", "中村美咲", "小林誠", "加藤恵"],
-    "綱引き": ["田中太郎", "山本一郎", "鈴木花子", "渡辺直樹", "岡田准一"]
-}
+# --- Excel読み込み関数 ---
+def load_games_from_excel(filename):
+    if not os.path.exists(filename):
+        # ファイルがない場合の初期値
+        return {"データなし": []}
+    
+    # Excelを読み込み（A列：競技名, B列：氏名 を想定）
+    df = pd.read_excel(filename)
+    
+    # 競技名をキー、氏名のリストを値とする辞書に変換
+    # 例: {'玉入れ': ['田中太郎', '佐藤次郎'], ...}
+    games_dict = df.groupby('競技名')['氏名'].apply(list).to_dict()
+    return games_dict
 
-# チェックイン済みメンバーを保存する辞書 { "競技名": {名前, 名前...} }
+# 1. Excelからデータを読み込む
+EXCEL_FILE = 'sports_day.xlsx'
+GAMES = load_games_from_excel(EXCEL_FILE)
+
+# チェックイン済みメンバーを保存する辞書
 checked_in_data = {game: set() for game in GAMES}
 
 # --- ページ1：競技一覧画面 ---
 @app.get('/')
 def index():
+    # 起動中にExcelを更新した際、反映させたい場合はここで再読み込みも可能
+    # GAMES = load_games_from_excel(EXCEL_FILE) 
+    
     html = """
     <h1>体育祭 点呼システム</h1>
-    <p>競技を選んでください：</p>
+    <p>競技を選んでください（Excelから読み込み中）：</p>
     <ul>
         {% for game in games_list %}
         <li>

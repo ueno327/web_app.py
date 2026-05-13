@@ -135,3 +135,18 @@ def game_page(game_name):
                                  all_members=all_members,
                                  checked_in=checked_in_data[game_name],
                                  search_query=search_query)
+# --- 3. 点呼状態を更新する処理 (この部分が足りませんでした) ---
+@app.post('/update')
+def update_status():
+    game_name = request.form.get('game_name')
+    user_name = request.form.get('user_name')
+    action = request.form.get('action')
+
+    if game_name in checked_in_data:
+        if action == 'checkin':
+            checked_in_data[game_name].add(user_name)
+        elif action == 'cancel':
+            checked_in_data[game_name].discard(user_name)
+
+    # 処理が終わったら、元の競技ページに戻る
+    return redirect(url_for('game_page', game_name=game_name))

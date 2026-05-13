@@ -19,7 +19,7 @@ def load_games_from_excel(filename):
     return games_dict
 
 # 1. Excelからデータを読み込む
-EXCEL_FILE = 'sports_day.xlsx'
+EXCEL_FILE = 'data.xlsx'
 GAMES = load_games_from_excel(EXCEL_FILE)
 
 # チェックイン済みメンバーを保存する辞書

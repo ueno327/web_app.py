@@ -6,12 +6,12 @@ app = Flask(__name__)
 
 # --- Excel読み込み関数 ---
 def load_games_from_excel(filename):
-    if not os.path.exists(filename):
+    if not os.path.exists("data.xlsx"):
         # ファイルがない場合の初期値
         return {"データなし": []}
     
     # Excelを読み込み（A列：競技名, B列：氏名 を想定）
-    df = pd.read_excel(filename)
+    df = pd.read_excel("data.xlsx")
     
     # 競技名をキー、氏名のリストを値とする辞書に変換
     # 例: {'玉入れ': ['田中太郎', '佐藤次郎'], ...}

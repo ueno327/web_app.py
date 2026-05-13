@@ -51,12 +51,36 @@ def game_page(game_name):
     if game_name not in GAMES:
         return redirect(url_for('index'))
     
+    # 検索キーワードを取得
+    search_query = request.args.get('search', '').strip()
+    
+    # メンバー一覧を取得し、検索ワードがあれば絞り込む
+    all_members = GAMES[game_name]
+    if search_query:
+        display_members = [name for name in all_members if search_query in name]
+    else:
+        display_members = all_members
+    
     html = """
-    <a href="/">← 競技一覧に戻る</a>
+    <div style="margin-bottom: 20px;">
+        <a href="/">← 競技一覧に戻る</a>
+    </div>
+    
     <h1>【{{ game_name }}】出場確認</h1>
+
+    <form action="/game/{{ game_name }}" method="get" style="margin-bottom: 20px; background: #f9f9f9; padding: 10px; border-radius: 5px;">
+        <input type="text" name="search" placeholder="この競技内の名前を検索..." value="{{ search_query }}">
+        <button type="submit">絞り込み</button>
+        {% if search_query %}
+            <a href="/game/{{ game_name }}">リセット</a>
+        {% endif %}
+    </form>
+
+    <p>該当者: {{ display_members|length }} 名 / 全体: {{ all_members|length }} 名</p>
+
     <table border="1" style="width:100%; text-align:center; border-collapse: collapse;">
         <tr style="background-color: #f2f2f2;"><th>名前</th><th>状態</th><th>操作</th></tr>
-        {% for name in members %}
+        {% for name in display_members %}
         <tr>
             <td>{{ name }}</td>
             <td>{% if name in checked_in %} ✅済 {% else %} ー {% endif %}</td>
@@ -74,9 +98,17 @@ def game_page(game_name):
         </tr>
         {% endfor %}
     </table>
-    """
-    return render_template_string(html, game_name=game_name, members=GAMES[game_name], checked_in=checked_in_data[game_name])
 
+    {% if not display_members %}
+        <p style="color: red;">「{{ search_query }}」に一致する人は見つかりませんでした。</p>
+    {% endif %}
+    """
+    return render_template_string(html, 
+                                 game_name=game_name, 
+                                 members=display_members, 
+                                 all_members=all_members,
+                                 checked_in=checked_in_data[game_name],
+                                 search_query=search_query)
 # --- データ更新処理 ---
 @app.post('/update')
 def update():

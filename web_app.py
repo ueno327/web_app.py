@@ -90,7 +90,7 @@ def game_page(game_name):
 
     <table border="1" style="width:100%; text-align:center; border-collapse: collapse; margin-top: 10px; font-size: 1.1em;">
         <tr style="background-color: #f2f2f2;">
-            <th style="padding: 15px;">名前</th>
+            <td style="padding: 15px; {% if '(1)' in name %}color: red;{% elif '(2)' in name %}color: blue;{% elif '(3)' in name %}color: orange;{% endif %}"> {{ name }} </td>
             <th>状態</th>
             <th>操作</th>
         </tr>
